@@ -10,10 +10,11 @@ class LocationService {
   Timer? _locationTimer;
 
   Future<void> requestGeofencePermissions() async {
-    await Permission.locationWhenInUse
-        .request(); // Request foreground location permission
+    // await Permission.locationWhenInUse
+    //     .request(); // Request foreground location permission
+
     // Request background location permission if the geofence runs in the background
-    if (await Permission.locationAlways.isDenied) {
+    // if (await Permission.locationAlways.isDenied) {
       PermissionStatus backgroundPermission =
           await Permission.locationAlways.request();
       if (!backgroundPermission.isGranted) {
@@ -21,7 +22,7 @@ class LocationService {
       } else {
         debugPrint('Background location permission granted');
       }
-    }
+    // }
   }
 
   Future<void> checkLocationPermission() async {

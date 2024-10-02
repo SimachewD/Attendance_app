@@ -10,6 +10,7 @@ class GeofenceServiceHandler {
 
   BuildContext? _context;
   Timer? _locationTimer;
+  bool _wasInside = false; // Track the previous state
 
   void initialize({required Function(bool) onGeofenceStatusChanged}) {
     this.onGeofenceStatusChanged = onGeofenceStatusChanged;
@@ -33,7 +34,7 @@ class GeofenceServiceHandler {
       latitude: 8.9924164,
       longitude: 38.7922022,
       radius: [
-        geofenceservice.GeofenceRadius(id: 'radius_500m', length: 500),
+        geofenceservice.GeofenceRadius(id: 'radius_500m', length: 10),
       ],
     ),
   ];
@@ -63,25 +64,33 @@ class GeofenceServiceHandler {
       geofenceservice.GeofenceStatus geofenceStatus,
       geofenceservice.Location location) async {
     final bool isInside;
+    
     if (geofenceStatus == geofenceservice.GeofenceStatus.ENTER || 
-    geofenceStatus == geofenceservice.GeofenceStatus.DWELL) {
-      isInside = true; //when a user gets inside the geofence or stays out there, set isInside True
+        geofenceStatus == geofenceservice.GeofenceStatus.DWELL) {
+      isInside = true; // User is inside the geofence
     } else if (geofenceStatus == geofenceservice.GeofenceStatus.EXIT) {
-      isInside = false; ////when a user leaves the geofence, set isInside False
+      isInside = false; // User has exited the geofence
     } else {
-        return; // Early exit for other statuses
+      return; // Early exit for other statuses
     }
 
-    // Trigger the callback if it's set
-    if (onGeofenceStatusChanged != null) {
-      onGeofenceStatusChanged!(isInside);
-    }
+    // Only show the toast and trigger the callback if there is a real change/exit or enterd/
+    if (isInside != _wasInside) {
+      // Update the previous state
+      _wasInside = isInside;
 
-    toastification.show(
-      context: _context,
-      title: Text(isInside ? 'You are in' : 'You left'),
-      autoCloseDuration: const Duration(seconds: 5),
-    );
+      // Trigger the callback if it's set
+      if (onGeofenceStatusChanged != null) {
+        onGeofenceStatusChanged!(isInside);
+      }
+
+      // Show the toast message
+      toastification.show(
+        context: _context,
+        title: Text(isInside ? 'You are in' : 'You left'),
+        autoCloseDuration: const Duration(seconds: 5),
+      );
+    }
   }
 
   // void _onActivityChanged(geofenceservice.Activity prevActivity,
