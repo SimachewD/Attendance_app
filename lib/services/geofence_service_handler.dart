@@ -5,7 +5,6 @@ import 'package:geofence_service/geofence_service.dart' as geofenceservice;
 import 'package:toastification/toastification.dart';
 
 class GeofenceServiceHandler {
-
   Function(bool)? onGeofenceStatusChanged;
   GeofenceServiceHandler({this.onGeofenceStatusChanged});
 
@@ -16,18 +15,17 @@ class GeofenceServiceHandler {
     this.onGeofenceStatusChanged = onGeofenceStatusChanged;
   }
 
-
   final geofenceservice.GeofenceService _geofenceService =
       geofenceservice.GeofenceService.instance.setup(
-        interval: 5000,
-        accuracy: 100,
-        loiteringDelayMs: 30000,
-        statusChangeDelayMs: 10000,
-        useActivityRecognition: false,
-        allowMockLocations: false,
-        printDevLog: false,
-        geofenceRadiusSortType: geofenceservice.GeofenceRadiusSortType.DESC,
-      );
+    interval: 5000,
+    accuracy: 100,
+    loiteringDelayMs: 30000,
+    statusChangeDelayMs: 10000,
+    useActivityRecognition: false,
+    allowMockLocations: false,
+    printDevLog: false,
+    geofenceRadiusSortType: geofenceservice.GeofenceRadiusSortType.DESC,
+  );
 
   final List<geofenceservice.Geofence> _geofenceList = [
     geofenceservice.Geofence(
@@ -40,13 +38,16 @@ class GeofenceServiceHandler {
     ),
   ];
 
-  void setupGeofenceListeners( BuildContext context) {
+  void setupGeofenceListeners(BuildContext context) {
     _context = context; // Assign context here
-    _geofenceService.addGeofenceStatusChangeListener(_onGeofenceStatusChanged); // add a function to listen geofence status event (ENTER, EXIT)
-    _geofenceService.addLocationChangeListener(_onLocationChanged); // listen to location change
-    _geofenceService.addLocationServicesStatusChangeListener(_onLocationServicesStatusChanged); //listen for location service changes
+    _geofenceService.addGeofenceStatusChangeListener(
+        _onGeofenceStatusChanged); // add a function to listen geofence status event (ENTER, EXIT)
+    _geofenceService.addLocationChangeListener(
+        _onLocationChanged); // listen to location change
+    _geofenceService.addLocationServicesStatusChangeListener(
+        _onLocationServicesStatusChanged); //listen for location service changes
     _geofenceService.addStreamErrorListener(_onError); // listener for errors
- // _geofenceService.addActivityChangeListener(_onActivityChanged);
+    // _geofenceService.addActivityChangeListener(_onActivityChanged);
   }
 
   void startGeofenceService() {
@@ -61,11 +62,21 @@ class GeofenceServiceHandler {
       geofenceservice.GeofenceRadius geofenceRadius,
       geofenceservice.GeofenceStatus geofenceStatus,
       geofenceservice.Location location) async {
-    final bool isInside = (geofenceStatus == geofenceservice.GeofenceStatus.ENTER);
+    final bool isInside;
+    if (geofenceStatus == geofenceservice.GeofenceStatus.ENTER || 
+    geofenceStatus == geofenceservice.GeofenceStatus.DWELL) {
+      isInside = true; //when a user gets inside the geofence or stays out there, set isInside True
+    } else if (geofenceStatus == geofenceservice.GeofenceStatus.EXIT) {
+      isInside = false; ////when a user leaves the geofence, set isInside False
+    } else {
+        return; // Early exit for other statuses
+    }
+
     // Trigger the callback if it's set
     if (onGeofenceStatusChanged != null) {
       onGeofenceStatusChanged!(isInside);
     }
+
     toastification.show(
       context: _context,
       title: Text(isInside ? 'You are in' : 'You left'),
@@ -99,13 +110,15 @@ class GeofenceServiceHandler {
       return;
     }
     debugPrint('Error Code: $errorCode');
-  } 
+  }
 
   void disposing() {
     _locationTimer?.cancel();
-    _geofenceService.removeGeofenceStatusChangeListener(_onGeofenceStatusChanged);
+    _geofenceService
+        .removeGeofenceStatusChangeListener(_onGeofenceStatusChanged);
     _geofenceService.removeLocationChangeListener(_onLocationChanged);
-    _geofenceService.removeLocationServicesStatusChangeListener(_onLocationServicesStatusChanged);
+    _geofenceService.removeLocationServicesStatusChangeListener(
+        _onLocationServicesStatusChanged);
     _geofenceService.removeStreamErrorListener(_onError);
     _geofenceService.stop();
   }
